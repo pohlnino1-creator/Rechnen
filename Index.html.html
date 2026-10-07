@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kopfrechnen-Trainer</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f5f7fb;--card:#fff;--tx:#1b2433;--mut:#66708a;--ac:#3b6cf6;--ok:#1f9d55;--bad:#d64545;--bd:#dde3ef}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161f;--card:#1c2230;--tx:#e8ecf5;--mut:#9aa5bf;--ac:#6b8cff;--ok:#43c37a;--bad:#ff7070;--bd:#2c3547}}
+:root[data-theme="dark"]{--bg:#12161f;--card:#1c2230;--tx:#e8ecf5;--mut:#9aa5bf;--ac:#6b8cff;--ok:#43c37a;--bad:#ff7070;--bd:#2c3547}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.6rem;margin:8px 0 4px}
+p.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:16px}
+label{display:block;font-weight:600;margin-bottom:6px}
+input[type=text],input[type=number]{width:100%;padding:12px;font-size:1.1rem;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.lv{padding:12px 4px;border:2px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);cursor:pointer;font-size:1rem;text-align:center}
+.lv small{display:block;color:var(--mut);font-size:.75rem}
+.lv.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 15%,var(--bg))}
+button.go{width:100%;padding:14px;font-size:1.1rem;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer;font-weight:600}
+.hide{display:none}
+#task{font-size:3rem;text-align:center;font-weight:700;margin:12px 0;font-variant-numeric:tabular-nums}
+.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden;margin-bottom:8px}
+#fill{height:100%;width:100%;background:var(--ac)}
+.meta{display:flex;justify-content:space-between;color:var(--mut);font-size:.9rem}
+#fb{text-align:center;min-height:1.6em;font-weight:600;margin-top:10px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tw{overflow-x:auto}
+.two{grid-template-columns:repeat(2,1fr);margin-bottom:0}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .1em;font-size:.8em;line-height:1.15}
+.fr span:first-child{border-bottom:3px solid currentColor;padding:0 .25em}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 6px;text-align:left;border-bottom:1px solid var(--bd)}
+th{color:var(--mut);font-size:.8rem;font-weight:600}
+tr.me td{font-weight:700;color:var(--ac)}
+.note{color:var(--mut);font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<h1>🧠 Kopfrechnen-Trainer</h1>
+<p class="sub">10 Aufgaben pro Runde. Nur fehlerfreie Runden kommen ins Ranking.</p>
+
+<section id="start" class="card">
+  <label for="nm">Dein Name (Spitzname)</label>
+  <input id="nm" type="text" maxlength="16" placeholder="z. B. Mia" autocomplete="off">
+  <div class="levels two" id="modes"><button class="lv on" data-m="int">Ganze Zahlen</button><button class="lv" data-m="bruch">Brüche</button></div>
+  <div class="levels" id="levels">
+    <button class="lv on" data-l="leicht">Leicht<small>10 Sek.</small></button>
+    <button class="lv" data-l="mittel">Mittel<small>5 Sek.</small></button>
+    <button class="lv" data-l="schwer">Schwer<small>3 Sek.</small></button>
+  </div>
+  <button class="go" id="startBtn">Start</button>
+</section>
+
+<section id="game" class="card hide">
+  <div class="meta"><span id="cnt">1 / 10</span><span id="lvl"></span><span id="ok">✔ 0</span></div>
+  <div id="task"></div>
+  <div class="bar"><div id="fill"></div></div>
+  <input id="ans" type="number" inputmode="numeric" placeholder="Antwort + Enter" autocomplete="off">
+  <div id="fb"></div>
+</section>
+
+<section id="end" class="card hide">
+  <h2 id="res" style="margin-top:0"></h2>
+  <p id="resd" class="sub"></p>
+  <button class="go" id="again">Nochmal spielen</button>
+</section>
+
+<section class="card">
+  <h2 style="margin:0 0 10px;font-size:1.2rem">🏆 Ranking</h2>
+  <div class="tabs" id="mtabs"><button data-m="int" class="on">Ganze Zahlen</button><button data-m="bruch">Brüche</button></div>
+  <div class="tabs" id="tabs">
+    <button data-l="leicht" class="on">Leicht</button><button data-l="mittel">Mittel</button><button data-l="schwer">Schwer</button>
+  </div>
+  <div class="tw"><table><thead><tr><th>#</th><th>Name</th><th>Gesamtzeit</th></tr></thead><tbody id="rank"></tbody></table></div>
+  <p class="note" id="rnote">Nur Durchgänge mit 10 von 10 richtig. Wer insgesamt am schnellsten war, steht oben.</p>
+</section>
+</main>
+
+<script>
+const LV={int:{leicht:10,mittel:5,schwer:3},bruch:{leicht:20,mittel:10,schwer:6}};
+const N=10;
+let mode="int",rmode="int",level="leicht",tasks=[],idx=0,right=0,times=[],t0=0,raf=0,limit=0,busy=false;
+let db=null,myId=null,rows=[],tab="leicht";
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+
+try{const s=localStorage.getItem("kr_name");if(s)$("nm").value=s}catch(e){}
+
+const pick=()=>Math.random()<.25?rnd(1,10):rnd(11,20);
+function makeTask(){
+  const p=Math.random();
+  const op=p<.17?"+":p<.34?"−":p<.67?"×":"÷";
+  let a=pick(),b=pick(),r;
+  if(op==="+")r=a+b;
+  else if(op==="−"){if(b>a)[a,b]=[b,a];r=a-b}
+  else if(op==="×")r=a*b;
+  else{r=a;a=a*b}
+  return{q:a+" "+op+" "+b,r,sol:String(r)};
+}
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const frH=f=>'<span class="fr"><span>'+f[0]+'</span><span>'+f[1]+'</span></span>';
+function makeFrac(){
+  const R=()=>rnd(1,10);
+  let n1=R(),d1=R(),n2=R(),d2=R(),rn,rd;
+  const op=["+","−","×","÷"][rnd(0,3)];
+  if(op==="+"){rn=n1*d2+n2*d1;rd=d1*d2}
+  else if(op==="−"){if(n1*d2<n2*d1)[n1,d1,n2,d2]=[n2,d2,n1,d1];rn=n1*d2-n2*d1;rd=d1*d2}
+  else if(op==="×"){rn=n1*n2;rd=d1*d2}
+  else{rn=n1*d2;rd=d1*n2}
+  const g=gcd(rn,rd)||1;rn/=g;rd/=g;
+  return{q:frH([n1,d1])+" "+op+" "+frH([n2,d2]),fr:[rn,rd],sol:rd===1?String(rn):rn+"/"+rd};
+}
+function parseF(v){const m=/^(-?\d+)(?:\/(\d+))?$/.exec(v.replace(/\s+/g,""));if(!m)return null;const d=m[2]?+m[2]:1;return d?[+m[1],d]:null}
+function isRight(v,t){
+  if(!v)return false;
+  if(t.fr){const p=parseF(v);return !!p&&p[0]*t.fr[1]===t.fr[0]*p[1]}
+  return Number(v)===t.r;
+}
+
+document.querySelectorAll("#levels .lv").forEach(b=>b.onclick=()=>{
+  level=b.dataset.l;document.querySelectorAll("#levels .lv").forEach(x=>x.classList.toggle("on",x===b));
+});
+function labels(){document.querySelectorAll("#levels .lv").forEach(b=>{b.querySelector("small").textContent=LV[mode][b.dataset.l]+" Sek."})}
+document.querySelectorAll("#modes .lv").forEach(b=>b.onclick=()=>{
+  mode=b.dataset.m;document.querySelectorAll("#modes .lv").forEach(x=>x.classList.toggle("on",x===b));labels();
+});
+document.querySelectorAll("#mtabs button").forEach(b=>b.onclick=()=>{
+  rmode=b.dataset.m;document.querySelectorAll("#mtabs button").forEach(x=>x.classList.toggle("on",x===b));renderRank();
+});
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{
+  tab=b.dataset.l;document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));renderRank();
+});
+$("startBtn").onclick=start;$("again").onclick=()=>{$("end").classList.add("hide");$("start").classList.remove("hide")};
+
+function start(){
+  const n=$("nm").value.trim();
+  if(!n){$("nm").focus();return}
+  try{localStorage.setItem("kr_name",n)}catch(e){}
+  tasks=Array.from({length:N},()=>mode==="bruch"?makeFrac():makeTask());idx=0;right=0;times=[];limit=LV[mode][level]*1000;
+  $("ans").type=mode==="bruch"?"text":"number";$("ans").placeholder=mode==="bruch"?"z. B. 3/4 + Enter":"Antwort + Enter";
+  $("start").classList.add("hide");$("end").classList.add("hide");$("game").classList.remove("hide");
+  $("lvl").textContent=(mode==="bruch"?"Brüche · ":"")+level[0].toUpperCase()+level.slice(1);
+  show();
+}
+function show(){
+  busy=false;
+  $("task").innerHTML=tasks[idx].q+" = ?";
+  $("cnt").textContent=(idx+1)+" / "+N;$("ok").textContent="✔ "+right;
+  $("ans").value="";$("ans").focus();$("fb").textContent="";
+  t0=performance.now();cancelAnimationFrame(raf);tick();
+}
+function tick(){
+  const el=performance.now()-t0,left=Math.max(0,1-el/limit);
+  $("fill").style.width=(left*100)+"%";
+  $("fill").style.background=left<.3?"var(--bad)":"var(--ac)";
+  if(el>=limit){submit(true)}else raf=requestAnimationFrame(tick);
+}
+$("ans").addEventListener("keydown",e=>{if(e.key==="Enter")submit(false)});
+function submit(timeout){
+  if(busy)return;busy=true;cancelAnimationFrame(raf);
+  const el=Math.min(performance.now()-t0,limit),v=$("ans").value;
+  const ok=!timeout&&isRight(v,tasks[idx]);
+  if(ok){right++;times.push(el);$("fb").style.color="var(--ok)";$("fb").textContent="Richtig! ✔"}
+  else{$("fb").style.color="var(--bad)";$("fb").textContent=(timeout?"Zeit abgelaufen. ":"Falsch. ")+"Lösung: "+tasks[idx].sol}
+  $("ok").textContent="✔ "+right;
+  setTimeout(()=>{idx++;idx>=N?finish():show()},ok?350:1000);
+}
+async function finish(){
+  $("game").classList.add("hide");$("end").classList.remove("hide");
+  const perfect=right===N,total=times.reduce((x,y)=>x+y,0)/1000;
+  $("res").textContent=right+" von "+N+" richtig";
+  $("resd").textContent=perfect?"Gesamtzeit: "+total.toFixed(2)+" Sek.":"Ins Ranking kommen nur Durchgänge mit allen Antworten richtig.";
+  if(!perfect||!db||!myId)return;
+  try{
+    const ref=db.collection("scores").doc(myId),key=(mode==="bruch"?"b_":"")+level+"T";
+    const snap=await ref.get();const d=(snap&&snap.data&&snap.data())||{};
+    const old=d[key];
+    d.name=$("nm").value.trim().slice(0,16);
+    if(typeof old!=="number"||total<old){d[key]=total;$("resd").textContent+=" – neuer Bestwert! 🎉"}
+    await ref.set(d);
+  }catch(e){console.error(e);$("resd").textContent+=" (Ranking konnte nicht gespeichert werden)"}
+}
+
+function renderRank(){
+  const k=(rmode==="bruch"?"b_":"")+tab+"T";
+  const list=rows.filter(r=>typeof r[k]==="number").sort((x,y)=>x[k]-y[k]).slice(0,15);
+  const tb=$("rank");tb.textContent="";
+  if(!list.length){const tr=tb.insertRow();const td=tr.insertCell();td.colSpan=3;td.className="note";td.textContent="Noch keine Einträge.";return}
+  list.forEach((r,i)=>{
+    const tr=tb.insertRow();if(r._id===myId)tr.className="me";
+    [i+1,r.name||"?",r[k].toFixed(2)+" s"].forEach(v=>{tr.insertCell().textContent=v});
+  });
+}
+
+(async()=>{
+  try{
+    const u=await claude.use("user");db=await claude.use("db");
+    if(!db){$("rnote").textContent="Ranking nur nach Anmeldung verfügbar.";return}
+    myId=u?await u.id():null;
+    db.collection("scores").onSnapshot(s=>{
+      rows=s.docs.map(d=>Object.assign({_id:d.id},d.data()));renderRank();
+    },e=>{$("rnote").textContent="Ranking gerade nicht erreichbar."});
+  }catch(e){$("rnote").textContent="Ranking gerade nicht erreichbar."}
+})();
+renderRank();
+</script>
+</body>
+</html>
